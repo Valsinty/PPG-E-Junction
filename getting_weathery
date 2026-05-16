@@ -1,0 +1,83 @@
+import requests
+import xml.etree.ElementTree as ET
+import datetime
+
+url = "https://opendata.fmi.fi/wfs/eng"
+
+### SET CORRECTTT
+latilong = "60.1699,24.9384"  # fromatted as text e.g. "60.1699,24.9384"
+timestart_weather = "2026-05-23T00:00:00Z"  # fromatted as text e.g. "2026-05-23T00:00:00Z"
+endtime_weather = "2026-05-25T00:00:00Z"  # fromatted as text e.g. "2026-05-23T00:00:00Z"
+parameters_we_want = "temperature,humidity"
+
+
+### comparing the prompted date with current ###
+### why?
+# two main weather models
+# 1. harmonie - more exact, max 2/3 days in the future
+# 2. ecmwf - less exact, max 9 days in the future
+
+from datetime import datetime, timezone
+
+# --- parse ISO strings (Z = UTC) ---
+start_dt = datetime.fromisoformat(timestart_weather.replace("Z", "+00:00"))
+end_dt = datetime.fromisoformat(endtime_weather.replace("Z", "+00:00"))
+
+# --- current time in UTC ---
+now = datetime.now(timezone.utc)
+
+# --- difference in days from now to forecast start ---
+delta_days = (end_dt - now).total_seconds() / (3600 * 24)
+
+# --- model selection logic ---
+if delta_days <= 3:
+    model = "harmonie"
+    sqid = "harmonie::forecast::surface::point::simple"   # best for short-term, high resolution
+elif delta_days <= 9:
+    model = "ecmwf"
+    sqid = "ecmwf::forecast::surface::point::simple"      # medium-range forecast
+else:
+    raise Exception("Asking for weather more than 9 days in the future.")      
+
+print(f"Start: {start_dt}")
+print(f"End: {end_dt}")
+print(f"Delta days: {delta_days:.2f}")
+print(f"Selected model: {model}")
+
+
+params = {
+    "service": "WFS",
+    "version": "2.0.0",
+    "request": "getFeature",
+    "storedquery_id": sqid,
+    "latlon": latilong,
+    "parameters": parameters_we_want,
+    "starttime": start_dt.isoformat().replace("+00:00", "Z"),
+    "endtime": end_dt.isoformat().replace("+00:00", "Z")
+}
+
+
+xml_text = requests.get(
+    url,
+    params=params
+).text
+
+root = ET.fromstring(xml_text)
+
+ns = {
+    "wfs": "http://www.opengis.net/wfs/2.0",
+    "BsWfs": "http://xml.fmi.fi/schema/wfs/2.0",
+}
+
+for member in root.findall("wfs:member", ns):
+
+    time_el = member.find(".//BsWfs:Time", ns)
+    param_el = member.find(".//BsWfs:ParameterName", ns)
+    value_el = member.find(".//BsWfs:ParameterValue", ns)
+
+    if time_el is not None:
+        print(
+            time_el.text,
+            param_el.text,
+            value_el.text
+        )
