@@ -1,0 +1,44 @@
+name: Fetch Google Drive Data
+
+on:
+  # Allows you to trigger this script manually from the GitHub website
+  workflow_dispatch:
+  # Optional: Uncomment the lines below to run it automatically on every code push
+  # push:
+  #   branches: [ main ]
+
+jobs:
+  run-python-script:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Download your repository code into the runner
+    - name: Checkout repository code
+      uses: actions/checkout@v4
+
+    # 2. Set up the Python environment
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip' # Speeds up future runs
+
+    # 3. Install necessary spatial and data libraries
+    - name: Install system dependencies and Python packages
+      run: |
+        sudo apt-get update && sudo apt-get install -y libgdal-dev
+        pip install geopandas fsspec pydrive2
+
+    # 4. Safely reconstruct the credentials.json file from GitHub Secrets
+    - name: Create credentials.json file
+      run: |
+        echo '${{ secrets.GDRIVE_CREDENTIALS }}' > credentials.json
+
+    # 5. Execute your Python script
+    - name: Run data fetch script
+      run: python your_script.py
+
+    # 6. Automatically shred the credentials key for security
+    - name: Clean up credentials
+      if: always()
+      run: rm -f credentials.json
