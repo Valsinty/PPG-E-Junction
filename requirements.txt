@@ -1,0 +1,11 @@
+streamlit
+streamlit-folium
+geopandas
+folium
+osmnx
+requests
+branca
+beautifulsoup4
+lxml
+shapely
+pandas
