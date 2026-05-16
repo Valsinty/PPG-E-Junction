@@ -23,7 +23,7 @@ def get_elevation_from_corners(min_longitude, min_latitude, max_longitude, max_l
   gdrive_url = f"gdrive://{file_id}"
   storage_options = {"gdrive": {"credentials": credentials}}
   
-  # 6. Define a bounding box to query just a small region of the 20 GB file
+  # 6. Define a bounding box to query just a small region of the file
   # Format: (min_longitude, min_latitude, max_longitude, max_latitude)
   roi_bbox = (min_longitude, min_latitude, max_longitude, max_latitude)
   
