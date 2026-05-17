@@ -37,12 +37,12 @@ if "bbox" not in st.session_state:
 # SIDEBAR
 # ============================================================
 with st.sidebar:
-    st.header("📍 Alan Seçimi")
-    st.markdown("**Yöntem 1:** Harita üzerinde dikdörtgen çiz")
-    st.markdown("**Yöntem 2:** Koordinat gir")
+    st.header("📍 Area Selection")
+    st.markdown("**Method 1:** Draw a rectangle on the map")
+    st.markdown("**Method 2:** Enter coordinates manually")
 
     st.divider()
-    st.subheader("Manuel Koordinat Girişi")
+    st.subheader("Manual Coordinate Input")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -52,7 +52,7 @@ with st.sidebar:
         MAX_LON_input = st.number_input("Max Lon", value=25.10, format="%.4f", step=0.01)
         MAX_LAT_input = st.number_input("Max Lat", value=60.30, format="%.4f", step=0.01)
 
-    if st.button("📌 Bu Koordinatları Kullan", use_container_width=True):
+    if st.button("📌 Use These Coordinates", use_container_width=True):
         st.session_state.bbox = (MIN_LON_input, MIN_LAT_input, MAX_LON_input, MAX_LAT_input)
         st.rerun()
 
@@ -60,19 +60,19 @@ with st.sidebar:
 
     if st.session_state.bbox:
         b = st.session_state.bbox
-        st.markdown("**Seçili Alan:**")
+        st.markdown("**Selected Area:**")
         st.code(f"Min Lon: {b[0]:.4f}\nMin Lat: {b[1]:.4f}\nMax Lon: {b[2]:.4f}\nMax Lat: {b[3]:.4f}")
-        run = st.button("🚀 Analizi Başlat", use_container_width=True, type="primary")
+        run = st.button("🚀 Start Analysis", use_container_width=True, type="primary")
     else:
-        st.info("Henüz alan seçilmedi.")
+        st.info("No area selected yet.")
         run = False
 
 # ============================================================
 # STEP 1 — DRAW MAP
 # ============================================================
 if not run:
-    st.markdown("### 1️⃣ Analiz alanını seç")
-    st.markdown("Haritada sol üstteki **dikdörtgen aracını** kullanarak alan çiz, veya soldaki panelden koordinat gir.")
+    st.markdown("### 1️⃣ Select Analysis Area")
+    st.markdown("Use the **rectangle tool** on the top-left of the map to draw an area, or enter coordinates in the sidebar.")
 
     draw_map = folium.Map(location=[60.2, 24.9], zoom_start=8, tiles="OpenStreetMap")
 
@@ -80,7 +80,7 @@ if not run:
         b = st.session_state.bbox
         folium.Rectangle(
             bounds=[[b[1], b[0]], [b[3], b[2]]],
-            color="blue", fill=True, fill_opacity=0.1, tooltip="Seçili alan"
+            color="blue", fill=True, fill_opacity=0.1, tooltip="Selected area"
         ).add_to(draw_map)
 
     Draw(
@@ -123,7 +123,7 @@ if run and st.session_state.bbox:
     except Exception:
         API_KEY = "1d9d451c-28be-4deb-b051-9bd521a062db"
 
-    st.markdown("### 2️⃣ Analiz Sonuçları")
+    st.markdown("### 2️⃣ Analysis Results")
 
     center_lat = (MIN_LAT + MAX_LAT) / 2
     center_lon = (MIN_LON + MAX_LON) / 2
@@ -132,13 +132,13 @@ if run and st.session_state.bbox:
 
     folium.Rectangle(
         bounds=[[MIN_LAT, MIN_LON], [MAX_LAT, MAX_LON]],
-        color="blue", fill=False, weight=2, dash_array="6", tooltip="Analiz alanı"
+        color="blue", fill=False, weight=2, dash_array="6", tooltip="Analysis area"
     ).add_to(mymap)
 
     # ----------------------------------------------------------
     # ELEVATION CONTOURS
     # ----------------------------------------------------------
-    with st.status("🏔️ Yükseklik konturları yükleniyor..."):
+    with st.status("🏔️ Loading elevation contours..."):
         try:
             url = (
                 "https://avoin-paikkatieto.maanmittauslaitos.fi/"
@@ -165,22 +165,22 @@ if run and st.session_state.bbox:
                 folium.GeoJson(gdf, style_function=elevation_style,
                                tooltip=folium.GeoJsonTooltip(fields=[elevation_col], aliases=["Elevation:"])
                                ).add_to(contour_layer)
-                st.write("✅ Yükseklik konturları yüklendi.")
+                st.write("✅ Elevation contours loaded.")
             else:
                 contour_layer = folium.FeatureGroup(name="Elevation Contours (No Data)", show=True)
                 elev_colormap = None
-                st.write("⚠️ Yükseklik verisi bulunamadı.")
+                st.write("⚠️ Elevation data not found.")
         except Exception as e:
             contour_layer = folium.FeatureGroup(name="Elevation Contours (Error)", show=True)
             elev_colormap = None
-            st.write(f"⚠️ Yükseklik verisi yüklenemedi: {e}")
+            st.write(f"⚠️ Elevation data could not be loaded: {e}")
 
     contour_layer.add_to(mymap)
 
     # ----------------------------------------------------------
     # POPULATION DENSITY
     # ----------------------------------------------------------
-    with st.status("👥 Nüfus yoğunluğu yükleniyor..."):
+    with st.status("👥 Loading population density..."):
         try:
             population_url = (
                 "https://geo.stat.fi/geoserver/wfs"
@@ -204,21 +204,21 @@ if run and st.session_state.bbox:
                                    fields=["postinumeroalue", "nimi", "he_vakiy", "density"],
                                    aliases=["Zip Code:", "Area Name:", "Population:", "Density:"]
                                )).add_to(population_layer)
-                st.write("✅ Nüfus yoğunluğu yüklendi.")
+                st.write("✅ Population density loaded.")
             else:
                 density_colormap = None
-                st.write("⚠️ Nüfus verisi bulunamadı.")
+                st.write("⚠️ Population data not found.")
         except Exception as e:
             population_layer = folium.FeatureGroup(name="Population Density (Error)", show=False)
             density_colormap = None
-            st.write(f"⚠️ Nüfus verisi yüklenemedi: {e}")
+            st.write(f"⚠️ Population data could not be loaded: {e}")
 
     population_layer.add_to(mymap)
 
     # ----------------------------------------------------------
     # ELECTRICITY
     # ----------------------------------------------------------
-    with st.status("⚡ Elektrik altyapısı yükleniyor..."):
+    with st.status("⚡ Loading power infrastructure..."):
         line_layer        = folium.FeatureGroup(name="Lines",        show=False)
         substation_layer  = folium.FeatureGroup(name="Substations",  show=False)
         transformer_layer = folium.FeatureGroup(name="Transformers", show=False)
@@ -261,9 +261,9 @@ if run and st.session_state.bbox:
                     if not other.empty:
                         folium.GeoJson(other, style_function=style_color("gray"),
                                        tooltip=folium.GeoJsonTooltip(fields=["power"])).add_to(other_layer)
-            st.write("✅ Elektrik altyapısı yüklendi.")
+            st.write("✅ Power infrastructure loaded.")
         except Exception as e:
-            st.write(f"⚠️ Elektrik verisi yüklenemedi: {e}")
+            st.write(f"⚠️ Power data could not be loaded: {e}")
 
     line_layer.add_to(mymap)
     substation_layer.add_to(mymap)
@@ -275,7 +275,7 @@ if run and st.session_state.bbox:
     # ----------------------------------------------------------
     # CELL TOWERS
     # ----------------------------------------------------------
-    with st.status("📡 Baz istasyonları yükleniyor..."):
+    with st.status("📡 Loading cell towers..."):
         cols = ['radio','mcc','net','area','cell','unit','lon','lat','range','samples','changeable','created','updated','averageSignal']
         tower_group = folium.FeatureGroup(name="Cell Towers", show=False)
         try:
@@ -285,7 +285,7 @@ if run and st.session_state.bbox:
                 (cell_tower_data["lat"] >= MIN_LAT - 0.05) & (cell_tower_data["lat"] <= MAX_LAT + 0.05) &
                 (cell_tower_data["lon"] >= MIN_LON - 0.1)  & (cell_tower_data["lon"] <= MAX_LON + 0.1)
             ].dropna(subset=["lat", "lon"])
-            st.write(f"✅ {len(filtered_towers)} baz istasyonu bulundu.")
+            st.write(f"✅ {len(filtered_towers)} cell towers found.")
 
             for _, row in filtered_towers.iterrows():
                 folium.CircleMarker(
@@ -306,16 +306,16 @@ if run and st.session_state.bbox:
                                                      "weight": 1, "fillOpacity": 0.25, "interactive": False}
                            ).add_to(tower_group)
         except FileNotFoundError:
-            st.write("⚠️ 244.csv.gz bulunamadı.")
+            st.write("⚠️ 244.csv.gz not found.")
 
     tower_group.add_to(mymap)
 
     # ----------------------------------------------------------
     # PUBLIC SERVICES
     # ----------------------------------------------------------
-    with st.status("🏥 Kamu hizmetleri yükleniyor..."):
+    with st.status("🏥 Loading public services..."):
         hospital_layer   = folium.FeatureGroup(name="Hospitals",     show=False)
-        school_layer     = folium.FeatureGroup(name="Schools",       show=False)
+        school_layer     = folium.FeatureGroup(name="Schools",        show=False)
         university_layer = folium.FeatureGroup(name="Universities",  show=False)
         police_layer     = folium.FeatureGroup(name="Police",        show=False)
         fire_layer       = folium.FeatureGroup(name="Fire Stations", show=False)
@@ -341,9 +341,9 @@ if run and st.session_state.bbox:
                 add_point_markers(public_gdf[public_gdf["amenity"] == "university"],   university_layer, "purple", "University")
                 add_point_markers(public_gdf[public_gdf["amenity"] == "police"],       police_layer,     "black",  "Police")
                 add_point_markers(public_gdf[public_gdf["amenity"] == "fire_station"], fire_layer,       "orange", "Fire Station")
-            st.write("✅ Kamu hizmetleri yüklendi.")
+            st.write("✅ Public services loaded.")
         except Exception as e:
-            st.write(f"⚠️ Kamu hizmetleri yüklenemedi: {e}")
+            st.write(f"⚠️ Public services could not be loaded: {e}")
 
     hospital_layer.add_to(mymap)
     school_layer.add_to(mymap)
@@ -354,7 +354,7 @@ if run and st.session_state.bbox:
     # ----------------------------------------------------------
     # RAILWAY NETWORK
     # ----------------------------------------------------------
-    with st.status("🚆 Demiryolu ağı yükleniyor..."):
+    with st.status("🚆 Loading railway network..."):
         from bs4 import BeautifulSoup
 
         rail_layer    = folium.FeatureGroup(name="Railways",         show=False)
@@ -377,7 +377,7 @@ if run and st.session_state.bbox:
                                tooltip=folium.GeoJsonTooltip(fields=["gml_id"], aliases=["Rail ID:"])
                                ).add_to(rail_layer)
         except Exception as e:
-            st.write(f"⚠️ Demiryolu hattı yüklenemedi: {e}")
+            st.write(f"⚠️ Railway line could not be loaded: {e}")
 
         for url_type, layer, radius, color, label in [
             ("RailwayStationNode", station_layer, 5, "red",    "Railway Station"),
@@ -393,9 +393,9 @@ if run and st.session_state.bbox:
                         folium.CircleMarker(location=[pt.y.iloc[0], pt.x.iloc[0]], radius=radius,
                                             color=color, fill=True, fill_opacity=0.9, popup=label).add_to(layer)
             except Exception as e:
-                st.write(f"⚠️ {url_type} yüklenemedi: {e}")
+                st.write(f"⚠️ {url_type} could not be loaded: {e}")
 
-        st.write("✅ Demiryolu ağı tamamlandı.")
+        st.write("✅ Railway network complete.")
 
     rail_layer.add_to(mymap)
     station_layer.add_to(mymap)
@@ -450,9 +450,9 @@ if run and st.session_state.bbox:
         collapsed=False
     ).add_to(mymap)
 
-    st.success("✅ Analiz tamamlandı!")
+    st.success("✅ Analysis complete!")
     st_folium(mymap, width=None, height=750, returned_objects=[])
 
-    if st.button("🔄 Yeni Alan Seç"):
+    if st.button("🔄 Select New Area"):
         st.session_state.bbox = None
         st.rerun()
