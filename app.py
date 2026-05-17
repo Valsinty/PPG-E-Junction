@@ -389,7 +389,7 @@ cols = [
 ]
 
 cell_tower_data = pd.read_csv(
-    '/content/244.csv.gz',
+    '/244.csv.gz',
     compression='gzip',
     header=None,
     names=cols,
